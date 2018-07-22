@@ -16,6 +16,9 @@ public class Controller implements Runnable {
     int maxJumps = 0;
     int jps = 1;
     int cjps = 0;
+    int firstJump = 0;
+
+    boolean breakAtScreenEdge = true;
 
     Controller(){
         this.I = new Interface();
@@ -29,14 +32,15 @@ public class Controller implements Runnable {
         int i = list.size() - 1;
 
         if(i == -1){
-            list.add(new Jump(0, 1,I));
-            visited.add(0);
-            visited.add(1);
+            list.add(new Jump(firstJump, (firstJump -1 > -1) ? firstJump-1 : firstJump + 1,I));
+            visited.add(firstJump);
+            visited.add((firstJump -1 > -1) ? firstJump-1 : firstJump + 1);
             jump++;
             return;
         }
 
         if(contains(list.get(i).to - jump) || list.get(i).to - jump < 0){
+            if(breakAtScreenEdge && list.get(i).to + jump > I.getWidth()/Jump.mod) return;
             list.add(new Jump(list.get(i).to, list.get(i).to + jump, I));
             visited.add(list.get(i).to + jump);
             jump++;
@@ -74,7 +78,13 @@ public class Controller implements Runnable {
 
     }
 
-    public synchronized void start(){
+    public synchronized void start() {
+        try {
+            firstJump = Integer.parseInt(JOptionPane.showInputDialog("Enter starting value"));
+            if(firstJump < 0) throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(null, "Input was not an Integer value 0 or larger, default value used");
+        }
         try {
             Jump.mod = Integer.parseInt(JOptionPane.showInputDialog("Enter scale modifier"));
             if(Jump.mod < 1) throw new NumberFormatException();
@@ -82,11 +92,12 @@ public class Controller implements Runnable {
             if(maxJumps < 1) throw new NumberFormatException();
             jps = Integer.parseInt(JOptionPane.showInputDialog("Enter desired jumps per second"));
             if(jps < 1) throw new NumberFormatException();
-
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(null, "Please enter an integer with a value above 0");
             System.exit(0);
         }
+
+        breakAtScreenEdge = JOptionPane.showConfirmDialog(null, "Break at window Edge?", "", JOptionPane.YES_NO_OPTION) == 0;
 
 
         if(running) return;
